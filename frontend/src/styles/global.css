@@ -33,3 +33,19 @@ body { margin: 0; background: #f6f8fb; color: #1f2937; }
 .link { border: none; background: none; color: var(--brand); cursor: pointer; padding: 0; }
 .page-foot { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--muted); }
 .error-text { color: #b42318; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.check-col { width: 36px; text-align: center; }
+.batch-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+.batch-info { color: var(--muted); font-size: 12px; }
+.batch-result { margin-top: 12px; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.batch-result-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.batch-result-head .link { margin-left: auto; }
+.batch-result-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.batch-result-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.batch-code { font-weight: 600; }
+.batch-message { color: var(--muted); flex: 1; }
+.badge { border-radius: 10px; padding: 1px 8px; font-size: 12px; white-space: nowrap; }
+.badge-success { background: #e7f6ec; color: #157347; }
+.badge-duplicate { background: #eef2f7; color: #475569; }
+.badge-busy { background: #fef3e2; color: #b45309; }
+.badge-failed { background: #fdecea; color: #b42318; }

@@ -28,6 +28,38 @@ class EntryPayload(BaseModel):
     remark: str | None = None
 
 
+class EntryActionPayload(BaseModel):
+    """对单条记录执行动作时提交的字段：动作名平铺提交，附加字段放在 values 里。"""
+
+    action: str = ""
+    values: dict[str, Any] = Field(default_factory=dict)
+
+
+class BatchActionPayload(BaseModel):
+    """批量动作请求：一批记录 id 加一个动作名。"""
+
+    action: str
+    ids: list[int] = Field(default_factory=list)
+
+
+class BatchItemResult(BaseModel):
+    """批量动作里单条记录的处理结果。"""
+
+    id: int
+    code: str = "—"  # 冷库编码
+    outcome: str  # success 成功 / duplicate 重复提交 / busy 作业占用 / failed 失败
+    message: str
+    retryable: bool = False
+
+
+class BatchActionResult(BaseModel):
+    """批量动作的整体回执：ok 只在全部成功时为真，逐条结果看 results。"""
+
+    ok: bool
+    message: str
+    results: list[BatchItemResult] = Field(default_factory=list)
+
+
 
 class OrderEntry(BaseModel):
     """冷链订单明细结构。"""

@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.schemas import ActionResult, EntryPayload, PageResult
+from app.schemas import ActionResult, BatchActionResult, BatchActionPayload, EntryActionPayload, EntryPayload, PageResult
 from app.services.warehouse import WarehouseService
 
 router = APIRouter(prefix="/api/warehouse", tags=["冷库管理"])
@@ -48,10 +48,20 @@ def create_entry(payload: EntryPayload) -> ActionResult:
     return ActionResult(ok=True, message="冷库档案已登记", entry=entry)
 
 
+@router.post("/batch-actions", response_model=BatchActionResult)
+def run_batch_action(payload: BatchActionPayload) -> BatchActionResult:
+    """批量执行停用冷库、安排检修：逐条给出结果，正在作业的冷库跳过并说明原因，重复提交只生效一次。"""
+    results, message = service.run_batch_action(payload.action.strip(), payload.ids)
+    if not results:
+        return BatchActionResult(ok=False, message=message)
+    ok = all(item["outcome"] == "success" for item in results)
+    return BatchActionResult(ok=ok, message=message, results=results)
+
+
 @router.post("/{entry_id}/actions", response_model=ActionResult)
-def run_action(entry_id: int, payload: EntryPayload) -> ActionResult:
+def run_action(entry_id: int, payload: EntryActionPayload) -> ActionResult:
     """对单条冷库档案执行启用冷库、安排检修、停用冷库；不允许的动作会被拦下并说明原因。"""
-    action = str(payload.values.get("action") or "").strip()
+    action = payload.action.strip() or str(payload.values.get("action") or "").strip()
     entry, message = service.run_action(entry_id, action)
     if entry is None:
         return ActionResult(ok=False, message=message)
