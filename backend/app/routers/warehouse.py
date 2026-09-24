@@ -1,18 +1,18 @@
-"""冷库管理接口：维护冷库档案，覆盖启用冷库、安排检修、停用冷库等动作。"""
+"""冷库管理接口：维护冷库档案，覆盖启用冷库、安排检修、停用冷库与批量处理。"""
 from __future__ import annotations
 
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.schemas import ActionResult, EntryPayload, PageResult
+from app.schemas import ActionResult, BatchActionPayload, BatchActionResult, EntryPayload, PageResult
 from app.services.warehouse import WarehouseService
 
 router = APIRouter(prefix="/api/warehouse", tags=["冷库管理"])
 
 service = WarehouseService()
 
-LIST_FIELDS = ["冷库编码", "冷库名称", "库区温区", "设定温度", "库容吨位", "责任人", "启用状态"]
+LIST_FIELDS = ["冷库编码", "冷库名称", "库区温区", "设定温度", "库容吨位", "责任人", "作业状态", "启用状态"]
 STATUSES = ["已启用", "检修中", "已停用"]
 
 
@@ -28,6 +28,37 @@ def list_entries(
         raise HTTPException(status_code=400, detail="每页最多 200 条，请缩小分页范围")
     items, total = service.list_entries(keyword=keyword, status=status, page=page, size=size)
     return PageResult(items=items, total=total, page=page, size=size)
+
+
+@router.get("/summary")
+def status_summary() -> dict[str, Any]:
+    """按启用状态统计冷库数量，批量处理后列表页统计卡靠它同步刷新。"""
+    return service.status_summary()
+
+
+@router.post("/batch", response_model=BatchActionResult)
+def run_batch_action(payload: BatchActionPayload) -> BatchActionResult:
+    """批量停用或安排检修：逐条给出成败，正在进出库作业的冷库跳过并说明原因。
+
+    携带相同 request_id 的重复提交只生效一次，直接返回首次处理结果。
+    """
+    return BatchActionResult(**service.run_batch_action(payload.ids, payload.action, payload.request_id))
+
+
+@router.get("/batch/latest", response_model=BatchActionResult)
+def latest_batch() -> BatchActionResult:
+    """最近一次批量处理结果；还没有批量操作时返回空结果集。"""
+    result = service.latest_batch()
+    if result is None:
+        return BatchActionResult(ok=True, message="暂无批量处理记录")
+    return BatchActionResult(**result)
+
+
+@router.get("/export")
+def export_entries() -> dict[str, Any]:
+    """导出冷库管理清单：返回当前过滤条件下的全量数据。"""
+    items, total = service.list_entries(page=1, size=10000)
+    return {"module": "warehouse", "total": total, "items": items}
 
 
 @router.get("/{entry_id}", response_model=dict)
@@ -56,10 +87,3 @@ def run_action(entry_id: int, payload: EntryPayload) -> ActionResult:
     if entry is None:
         return ActionResult(ok=False, message=message)
     return ActionResult(ok=True, message=message, entry=entry)
-
-
-@router.get("/export")
-def export_entries() -> dict[str, Any]:
-    """导出冷库管理清单：返回当前过滤条件下的全量数据。"""
-    items, total = service.list_entries(page=1, size=10000)
-    return {"module": "warehouse", "total": total, "items": items}

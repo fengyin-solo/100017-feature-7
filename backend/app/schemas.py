@@ -28,6 +28,39 @@ class EntryPayload(BaseModel):
     remark: str | None = None
 
 
+class BatchActionPayload(BaseModel):
+    """批量动作请求：一批记录 id、动作名与幂等键（重复提交只生效一次）。"""
+
+    ids: list[int] = Field(default_factory=list)
+    action: str = ""
+    request_id: str | None = None
+
+
+class BatchItemResult(BaseModel):
+    """批量动作里单条记录的处理结果。"""
+
+    id: int
+    ok: bool
+    skipped: bool = False
+    message: str
+    entry: dict[str, Any] | None = None
+
+
+class BatchActionResult(BaseModel):
+    """批量动作整体结果：逐条成败各自独立，不整组失败。"""
+
+    ok: bool
+    message: str
+    action: str = ""
+    request_id: str | None = None
+    duplicated: bool = False
+    total: int = 0
+    succeeded: int = 0
+    failed: int = 0
+    skipped: int = 0
+    results: list[BatchItemResult] = Field(default_factory=list)
+
+
 
 class OrderEntry(BaseModel):
     """冷链订单明细结构。"""
